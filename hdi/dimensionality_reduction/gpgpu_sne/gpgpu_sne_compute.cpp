@@ -329,6 +329,7 @@ namespace hdi {
 
     void GpgpuSneCompute::updatePoints(unsigned int num_points, float* points, embedding_type* embedding, float iteration, float mult)
     {
+      // update points' positions
       _update_program.bind();
 
       _update_program.uniform1ui("num_points", num_points);

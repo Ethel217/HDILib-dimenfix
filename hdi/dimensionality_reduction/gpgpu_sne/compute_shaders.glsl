@@ -186,6 +186,12 @@ const char* update_source = GLSL(430,
     Gain[i] = gain;
     PrevGradients[i] = pgrad;
     Positions[i] += pgrad * mult;
+    // clamp y-axis only
+    // TODO: add input buffer for range_limit
+    if (i * 2 + 1 < num_points * 2) {
+      Positions[i * 2 + 1] = clamp(Positions[i * 2 + 1], 3, 5); // Clamp y-axis only
+    }
+
   }
 );
 
