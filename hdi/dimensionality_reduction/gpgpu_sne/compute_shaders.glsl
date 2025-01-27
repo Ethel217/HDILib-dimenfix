@@ -186,11 +186,43 @@ const char* update_source = GLSL(430,
     Gain[i] = gain;
     PrevGradients[i] = pgrad;
     Positions[i] += pgrad * mult;
+
+    // TODO: 
     // clamp y-axis only
     // TODO: add input buffer for range_limit
-    if (i * 2 + 1 < num_points * 2) {
-      Positions[i * 2 + 1] = clamp(Positions[i * 2 + 1], 3, 5); // Clamp y-axis only
-    }
+    // if (i * 2 + 1 < num_points * 2) {
+    //   Positions[i * 2 + 1] = clamp(Positions[i * 2 + 1], 3, 5); // Clamp y-axis only
+    // }
+    // Compute x-axis range
+    // float x_min = positions[0];
+    // float x_max = positions[0];
+
+    // for (int i = 0; i < num_points; ++i) {
+    //     float x_value = positions[i * 2]; // x-axis values are at even indices
+    //     x_min = min(x_min, x_value);
+    //     x_max = max(x_max, x_value);
+    // }
+
+    // // TODO: input ranges as percentages
+    // float x_range = x_max - x_min;
+    // float segment_size = x_range / 10.0;
+
+    // // Step 3: Clamp the y-axis based on the segment index
+    // for (int i = 0; i < num_points; ++i) {
+    //     float x_value = positions[i * 2];      // x-axis value of the current point
+    //     float y_value = positions[i * 2 + 1]; // y-axis value of the current point
+
+    //     // Determine the segment index
+    //     int segment_index = int((x_value - x_min) / segment_size);
+    //     segment_index = clamp(segment_index, 0, 9); // Ensure the index is within [0, 9]
+
+    //     // Calculate the clamping range for y-axis
+    //     float y_min = x_min + segment_index * segment_size;
+    //     float y_max = x_min + (segment_index + 1) * segment_size;
+
+    //     // Clamp the y-axis
+    //     positions[i * 2 + 1] = clamp(y_value, y_min, y_max);
+    // }
 
   }
 );
@@ -275,11 +307,18 @@ const char* bounds_source = GLSL(430,
 const char* center_and_scale_source = GLSL(430,
   layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
   layout(std430, binding = 1) buffer BoundsInterface { vec2 Bounds[]; };
+  layout(std430, binding = 2) buffer RangeLimitInterface { vec2 RangeLimit[]; };  // range_limit input here (in percentages)
+
+  // TODO: preprocess range_limit on CPU, calculate for per point??
   layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
   uniform uint num_points;
   uniform bool scale;
   uniform float diameter;
+
+  uniform float range_min = 0.0;
+  uniform float range_max = 100.0;
+  uniform uint num_ranges = 10;
 
   void main() {
     uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
@@ -291,11 +330,10 @@ const char* center_and_scale_source = GLSL(430,
     vec2 center = (Bounds[0] + Bounds[1]) * 0.5;
 
     vec2 pos = Positions[i];
+    float range = Bounds[1].x - Bounds[0].x;
 
     if (scale)
     {
-      float range = Bounds[1].x - Bounds[0].x;
-
       if (range < diameter) //  || range.y < diameter
       {
         float scale_factor = diameter / range;
@@ -307,6 +345,27 @@ const char* center_and_scale_source = GLSL(430,
     {
       pos -= center;
     }
+
+    // TODO: scale x-y
+    float x_range = Bounds[1].x - Bounds[0].x;
+    float y_range = Bounds[1].y - Bounds[0].y;
+    float factor = x_range / y_range;
+    pos -= center;
+    pos.y *= factor;
+
+    // TODO: push here
+    vec2 range_limit = RangeLimit[i];
+    float range_size = range * (range_limit.y - range_limit.x) / 100.0f;
+    float scaled_l = Bounds[0].y + range * range_limit.x / 100.0f;
+    float scaled_u = scaled_l + range_size;
+    pos.y = clamp(pos.y, scaled_l, scaled_u);
+
+    // uint range_index = uint(mod(float(i), float(num_ranges)));
+
+    // float range_size = range * (range_max - range_min) / (float(num_ranges) * 100);
+    // float scaled_min = Bounds[0].y + range_size * float(range_index);
+    // float scaled_max = scaled_min + range_size;
+    // pos.y = clamp(pos.y, scaled_min, scaled_max);
 
     Positions[i] = pos;
   }

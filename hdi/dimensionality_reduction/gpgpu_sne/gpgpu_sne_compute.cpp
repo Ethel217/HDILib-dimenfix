@@ -24,7 +24,8 @@ namespace hdi {
       GRADIENTS,
       PREV_GRADIENTS,
       GAIN,
-      BOUNDS
+      BOUNDS,
+      RANGE_LIMITS
     };
 
     // Linearized sparse neighbourhood matrix
@@ -78,7 +79,7 @@ namespace hdi {
       return bounds;
     }
 
-    void GpgpuSneCompute::initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P) {
+    void GpgpuSneCompute::initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P, const std::vector<Point2D>& range_limit) {
       _params = params;
 
       unsigned int num_points = embedding->numDataPoints();
@@ -103,19 +104,19 @@ namespace hdi {
       _function_support = 6.5f;
 
       // Initialize all OpenGL resources
-      initializeOpenGL(num_points, linear_P);
+      initializeOpenGL(num_points, linear_P, range_limit);
 
       _initialized = true;
     }
 
     void GpgpuSneCompute::clean()
     {
-      glDeleteBuffers(10, _compute_buffers.data());
+      glDeleteBuffers(11, _compute_buffers.data());
 
       fieldComputation.clean();
     }
 
-    void GpgpuSneCompute::initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P) {
+    void GpgpuSneCompute::initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P, const std::vector<Point2D>& range_limit) {
       glClearColor(0, 0, 0, 0);
 
       fieldComputation.init(num_points);
@@ -187,6 +188,14 @@ namespace hdi {
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[BOUNDS]);
       glBufferData(GL_SHADER_STORAGE_BUFFER, 2 * sizeof(Point2D), ones.data(), GL_STREAM_READ);
 
+      // Add new buffer for range_limit
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[RANGE_LIMITS]);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, range_limit.size() * sizeof(Point2D), range_limit.data(), GL_STATIC_DRAW);
+      // std::vector<float> data(10);
+      // glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 10 * sizeof(float), data.data());
+      // for (const auto& value : data) {
+      //   std::cout << value << " ";
+      // }
       glGenQueries(2, _timerQuery);
     }
 
@@ -254,9 +263,9 @@ namespace hdi {
       computeGradients(num_points, sum_Q, exaggeration);
 
       // Update the point positions
-      updatePoints(num_points, points, embedding, iteration, mult);
-      computeEmbeddingBounds1(num_points, points);
-      updateEmbedding(num_points, exaggeration, iteration, mult);
+      updatePoints(num_points, points, embedding, iteration, mult); // update points positions
+      computeEmbeddingBounds1(num_points, points); // compute bounds
+      updateEmbedding(num_points, exaggeration, iteration, mult); // rescale and center
 
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[POSITION]);
       glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, embedding->numDataPoints() * sizeof(Point2D), points);
@@ -361,6 +370,8 @@ namespace hdi {
       // Bind required buffers to shader program
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _compute_buffers[POSITION]);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _compute_buffers[BOUNDS]);
+      // TODO: bind range limit? or input range limit
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _compute_buffers[RANGE_LIMITS]);
 
       if (exaggeration > 1.2)
       {

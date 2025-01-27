@@ -115,7 +115,7 @@ namespace hdi {
     /////////////////////////////////////////////////////////////////////////
 
 
-    void GradientDescentTSNETexture::initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params) {
+    void GradientDescentTSNETexture::initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params, const std::vector<GpgpuSneCompute::Point2D>& range_limit) {
       utils::secureLog(_logger, "Initializing tSNE...");
       {//Aux data
         _params = params;
@@ -140,7 +140,7 @@ namespace hdi {
       if (_gpgpu_type == AUTO_DETECT)
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
       if (_gpgpu_type == COMPUTE_SHADER)
-        _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+        _gpgpu_compute_tsne.initialize(_embedding, _params, _P, range_limit);
       else// (_tsne_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #else
@@ -153,7 +153,7 @@ namespace hdi {
       utils::secureLog(_logger, "Initialization complete!");
     }
 
-    void GradientDescentTSNETexture::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params) {
+    void GradientDescentTSNETexture::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params, const std::vector<GpgpuSneCompute::Point2D>& range_limit) {
       utils::secureLog(_logger, "Initializing tSNE with a user-defined joint-probability distribution...");
       {//Aux data
         _params = params;
@@ -177,7 +177,7 @@ namespace hdi {
       if (_gpgpu_type == AUTO_DETECT)
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
       if (_gpgpu_type == COMPUTE_SHADER)
-        _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+        _gpgpu_compute_tsne.initialize(_embedding, _params, _P, range_limit);
       else// (_tsne_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #else

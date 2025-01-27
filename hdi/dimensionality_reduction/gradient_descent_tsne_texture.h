@@ -71,9 +71,9 @@ namespace hdi {
       void setType(GpgpuSneType _tsneType);
 #endif
       //! Initialize the class with a list of distributions. A joint-probability distribution will be computed as in the tSNE algorithm
-      void initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters());
+      void initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters(), const std::vector<GpgpuSneCompute::Point2D>& range_limit = std::vector<GpgpuSneCompute::Point2D>());
       //! Initialize the class with a joint-probability distribution. Note that it must be provided non initialized and with the weight of each row equal to 2.
-      void initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters());
+      void initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters(), const std::vector<GpgpuSneCompute::Point2D>& range_limit = std::vector<GpgpuSneCompute::Point2D>());
       //! Change the runtime modifiable tsne parameters
       void updateParams(TsneParameters params);
       //! Reset the internal state of the class but it keeps the inserted data-points

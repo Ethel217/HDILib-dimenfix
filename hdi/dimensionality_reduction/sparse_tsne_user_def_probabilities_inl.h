@@ -119,19 +119,19 @@ namespace hdi{
         _previous_gradient.resize(size*params._embedding_dimensionality,0);
         _gain.resize(size*params._embedding_dimensionality,1);
 
-        _range_limits.resize(size * 2,0);
+        // _range_limits.resize(size * 2,0);
 
-        std::random_device rd; // Seed for random generator
-        std::mt19937 gen(rd()); // Standard mersenne_twister_engine
-        std::uniform_int_distribution<> dist_lower(0, 50); // Adjust range for lower bounds
-        std::uniform_int_distribution<> dist_upper(51, 100); // Adjust range for upper bounds
+        // std::random_device rd; // Seed for random generator
+        // std::mt19937 gen(rd()); // Standard mersenne_twister_engine
+        // std::uniform_int_distribution<> dist_lower(0, 50); // Adjust range for lower bounds
+        // std::uniform_int_distribution<> dist_upper(51, 100); // Adjust range for upper bounds
 
-        for (unsigned int i = 0; i < size; ++i) {
-            int lower_bound = dist_lower(gen);
-            int upper_bound = dist_upper(gen);
-            _range_limits[i * 2] = lower_bound;
-            _range_limits[i * 2 + 1] = upper_bound;
-        }
+        // for (unsigned int i = 0; i < size; ++i) {
+        //     int lower_bound = dist_lower(gen);
+        //     int upper_bound = dist_upper(gen);
+        //     _range_limits[i * 2] = lower_bound;
+        //     _range_limits[i * 2 + 1] = upper_bound;
+        // }
       }
 
       utils::secureLogValue(_logger,"Number of data points",_P.size());
@@ -165,19 +165,19 @@ namespace hdi{
         _previous_gradient.resize(size*params._embedding_dimensionality,0);
         _gain.resize(size*params._embedding_dimensionality,1);
 
-        _range_limits.resize(size * 2,0);
+        // _range_limits.resize(size * 2,0);
 
-        std::random_device rd; // Seed for random generator
-        std::mt19937 gen(rd()); // Standard mersenne_twister_engine
-        std::uniform_int_distribution<> dist_lower(0, 50); // Adjust range for lower bounds
-        std::uniform_int_distribution<> dist_upper(51, 100); // Adjust range for upper bounds
+        // std::random_device rd; // Seed for random generator
+        // std::mt19937 gen(rd()); // Standard mersenne_twister_engine
+        // std::uniform_int_distribution<> dist_lower(0, 50); // Adjust range for lower bounds
+        // std::uniform_int_distribution<> dist_upper(51, 100); // Adjust range for upper bounds
 
-        for (unsigned int i = 0; i < size; ++i) {
-            int lower_bound = dist_lower(gen);
-            int upper_bound = dist_upper(gen);
-            _range_limits[i * 2] = lower_bound;
-            _range_limits[i * 2 + 1] = upper_bound;
-        }
+        // for (unsigned int i = 0; i < size; ++i) {
+        //     int lower_bound = dist_lower(gen);
+        //     int upper_bound = dist_upper(gen);
+        //     _range_limits[i * 2] = lower_bound;
+        //     _range_limits[i * 2 + 1] = upper_bound;
+        // }
       }
 
       utils::secureLogValue(_logger,"Number of data points",_P.size());
@@ -411,7 +411,7 @@ namespace hdi{
 
     template <typename scalar, typename sparse_scalar_matrix>
     void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::updateTheEmbedding(double mult){
-      const int dim = _params._embedding_dimensionality;
+      // const int dim = _params._embedding_dimensionality;
       for(int i = 0; i < _gradient.size(); ++i){
         _gain[i] = static_cast<scalar_type>((sign(_gradient[i]) != sign(_previous_gradient[i])) ? (_gain[i] + .2) : (_gain[i] * .8));
         if(_gain[i] < _params._minimum_gain){
@@ -420,15 +420,16 @@ namespace hdi{
         _gradient[i] = static_cast<scalar_type>((_gradient[i]>0?1:-1)*std::abs(_gradient[i]*_params._eta* _gain[i])/(_params._eta*_gain[i]));
 
         _previous_gradient[i] = static_cast<scalar_type>(((_iteration<_params._mom_switching_iter)?_params._momentum:_params._final_momentum) * _previous_gradient[i] - _params._eta * _gain[i] * _gradient[i]);
-        if (i % dim != 0) {
-          // std::cout << _range_limits.size() << std::endl;
-          (*_embedding_container)[i] += static_cast<scalar_type>(_previous_gradient[i] * mult);
-        }
-        else {
-          // (*_embedding_container)[i] = static_cast<scalar_type>(_range_limits[0]); // TODO
-          // std::cout << i << std::endl;
-          (*_embedding_container)[i] = std::max(_range_limits[(int)(i / dim)], std::min((*_embedding_container)[i], _range_limits[(int)(i / dim + 1)]));;
-        }
+        (*_embedding_container)[i] += static_cast<scalar_type>(_previous_gradient[i] * mult);
+        // if (i % dim != 0) {
+        //   // std::cout << _range_limits.size() << std::endl;
+        //   (*_embedding_container)[i] += static_cast<scalar_type>(_previous_gradient[i] * mult);
+        // }
+        // else {
+        //   // (*_embedding_container)[i] = static_cast<scalar_type>(_range_limits[0]); // TODO
+        //   // std::cout << i << std::endl;
+        //   (*_embedding_container)[i] = std::max(_range_limits[(int)(i / dim)], std::min((*_embedding_container)[i], _range_limits[(int)(i / dim + 1)]));;
+        // }
       }
 
       //MAGIC NUMBER

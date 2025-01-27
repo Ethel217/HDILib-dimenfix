@@ -134,7 +134,7 @@ namespace hdi{
       typename data::Embedding<scalar_type>::scalar_vector_type* _embedding_container;
       bool _initialized; //! Initialization flag
       // TODO: add a range limit here
-      scalar_vector_type _range_limits;
+      // scalar_vector_type _range_limits;
 
       double _exaggeration_baseline;
 
