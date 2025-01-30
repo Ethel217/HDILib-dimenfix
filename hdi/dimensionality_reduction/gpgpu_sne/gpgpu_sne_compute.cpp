@@ -7,6 +7,7 @@
 #include <limits>
 #include <iostream>
 #include <cmath> // for sqrt
+#include <fstream>
 
 namespace hdi {
   namespace dr {
@@ -208,12 +209,30 @@ namespace hdi {
 
       // input labels
       // TODO: link to upload UI
+      // read txt for labels
+      std::vector<int> labels;
+      std::ifstream labelFile("C:\\Users\\zixuanhan\\Thesis\\Evaluation\\mnist_labels.txt");
+      if (labelFile.is_open())
+      {
+        int label;
+        while (labelFile >> label)
+          {
+              labels.push_back(label);
+          }
+          labelFile.close();
+          std::cout << "Successfully loaded labels file xxxx.";
+      }
+      else
+      {
+          std::cout << "Error: Could not open labels file.";
+          return;
+      }
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[LABELS]);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, num_points * sizeof(int), nullptr, GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, labels.size() * sizeof(int), labels.data(), GL_STATIC_DRAW);
 
       // calculate a class bound for each point
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[CLASS_BOUNDS]);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, range_limit.size() * sizeof(Point2D), nullptr, GL_STREAM_READ);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, range_limit.size() * sizeof(Point2D), zeroes.data(), GL_STREAM_DRAW);
       // std::vector<float> data(10);
       // glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 10 * sizeof(float), data.data());
       // for (const auto& value : data) {
@@ -291,9 +310,12 @@ namespace hdi {
       computeEmbeddingBounds1(num_points, points); // compute bounds
       updateEmbedding(num_points, exaggeration, iteration, mult); // rescale and center
 
+      if (_params._dimenfix && (unsigned int)iteration % 100 == 0) {
+        calcClassBounds(num_points, iteration, mult);
+      }
       
 
-      if ((unsigned int)iteration % _params._iters == 0) {
+      if (_params._dimenfix && (unsigned int)iteration % _params._iters == 0) {
         pushEmbedding(num_points, iteration, mult);
       }
 
@@ -421,19 +443,55 @@ namespace hdi {
     }
 
     void GpgpuSneCompute::calcClassBounds(unsigned int num_points, float iteration, float mult) {
-      _class_bounds_program.bind();
 
-      _class_bounds_program.uniform1ui("num_points", num_points);
+      std::vector<Point2D> positions(num_points);
+      std::vector<int> class_labels(num_points);
 
-      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _compute_buffers[POSITION]);
-      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _compute_buffers[LABELS]);
-      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _compute_buffers[CLASS_BOUNDS]);
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[LABELS]);
+      glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(int), class_labels.data());
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-      // Compute the bounds
-      unsigned int num_workgroups = (num_points / 128) + 1;
-      unsigned int grid_size = sqrt(num_workgroups) + 1;
-      glDispatchCompute(grid_size, grid_size, 1);
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[POSITION]);
+      glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), positions.data());
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+      // std::cout << "Positions: " << std::endl;
+
+      // for (int i = 0;i < 10;i ++) {
+      //   std::cout << positions[i].y << " ";
+      // }
+      // std::cout << std::endl;
+
+      // std::cout << "Labels: " << std::endl;
+
+      // for (int i = 0;i < 10;i ++) {
+      //   std::cout << class_labels[i] << " ";
+      // }
+      // std::cout << std::endl;
+
+      // std::unordered_map<uint32_t, std::vector<float>> class_points;
+
+      // for (size_t i = 0; i < positions.size(); i++) {
+      //     uint32_t class_id = class_labels[i];
+      //     float y = positions[i].y;
+      //     class_points[class_id].push_back(y);
+      // }
+
+      // std::unordered_map<uint32_t, std::pair<float, float>> class_bounds_95;
+
+      // for (auto& [class_id, y_values] : class_points) {
+      //     // Sort y-values
+      //     std::sort(y_values.begin(), y_values.end());
+
+      //     size_t n = y_values.size();
+      //     size_t lower_index = std::ceil(n * 0.025);
+      //     size_t upper_index = std::floor(n * 0.975);
+
+      //     float min_95 = y_values[lower_index];
+      //     float max_95 = y_values[upper_index];
+
+      //     class_bounds_95[class_id] = {min_95, max_95};
+      // }
     }
 
     void GpgpuSneCompute::pushEmbedding(unsigned int num_points, float iteration, float mult) {
@@ -441,12 +499,21 @@ namespace hdi {
 
       _dimenfix_program.uniform1ui("num_points", num_points);
 
+      if (_params._mode == "clipping") {
+        _dimenfix_program.uniform1ui("mode", 0);
+      }
+      else if (_params._mode == "gaussian") {
+        _dimenfix_program.uniform1ui("mode", 1);
+      }
+      if (_params._mode == "rescale") {
+        _dimenfix_program.uniform1ui("mode", 2);
+      }
+
       // Bind required buffers to shader program
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _compute_buffers[POSITION]);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _compute_buffers[BOUNDS]);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _compute_buffers[RANGE_LIMITS]);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _compute_buffers[CLASS_BOUNDS]);
-      // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _compute_buffers[RANGE_LIMITS]);
 
       unsigned int num_workgroups = (num_points / 128) + 1;
       unsigned int grid_size = sqrt(num_workgroups) + 1;

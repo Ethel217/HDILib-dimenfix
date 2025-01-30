@@ -352,13 +352,11 @@ const char* dimenfix_source = GLSL(430,
   layout(std430, binding = 1) buffer BoundsInterface { vec2 Bounds[]; };
   layout(std430, binding = 2) buffer RangeLimitInterface { vec2 RangeLimit[]; };  // range_limit input here (in percentages)
   layout(std430, binding = 3) buffer ClassBoundsInterface { vec2 ClassBounds[]; };  // class bounds input here (if mode is rescale)
-  // layout(std430, binding = 4) buffer ClassLabels { uint ClassLabels[]; };
 
   layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
   
   uniform uint num_points;
-  // uniform uint num_classes;
-  // uniform float padding;
+  uniform uint mode;
   
   void main() {
     uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
@@ -367,6 +365,7 @@ const char* dimenfix_source = GLSL(430,
     if (i >= num_points)
       return;
 
+    // TODO: to integrate rescaling, push first then align xy axis size!!!
     vec2 center = (Bounds[0] + Bounds[1]) * 0.5;
 
     vec2 pos = Positions[i];
