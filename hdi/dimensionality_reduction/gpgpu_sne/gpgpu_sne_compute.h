@@ -101,6 +101,8 @@ namespace hdi {
       void computeGradients(unsigned int num_points, float sum_Q, double exaggeration);
       void updatePoints(unsigned int num_points, float* points, embedding_type* embedding, float iteration, float mult);
       void updateEmbedding(unsigned int num_points, float exaggeration, float iteration, float mult);
+      void calcClassBounds(unsigned int num_points, float iteration, float mult);
+      void pushEmbedding(unsigned int num_points, float iteration, float mult);
 
     private:
       const unsigned int FIXED_FIELDS_SIZE = 40;
@@ -117,10 +119,14 @@ namespace hdi {
       ShaderProgram _forces_program;
       ShaderProgram _update_program;
       ShaderProgram _bounds_program;
-      ShaderProgram _center_and_scale_program;
+      ShaderProgram _center_and_scale_program; // stay as ori
+
+
+      ShaderProgram _class_bounds_program;
+      ShaderProgram _dimenfix_program;
 
       // SSBOs
-      std::array<GLuint, 11> _compute_buffers;
+      std::array<GLuint, 13> _compute_buffers;
 
       GLuint _timerQuery[2];
 

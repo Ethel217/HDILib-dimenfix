@@ -29,7 +29,7 @@
 * OF SUCH DAMAGE.
 *
 */
-
+#include <string>
 #ifndef TSNE_PARAMETERS_H
 #define TSNE_PARAMETERS_H
 
@@ -50,7 +50,10 @@ namespace hdi {
         _exaggeration_factor(4),
         _remove_exaggeration_iter(250),
         _exponential_decay_iter(150),
-        _presetEmbedding(false)
+        _presetEmbedding(false),
+        _dimenfix(false), //TODO: set to true for testing, false for usage
+        _mode("clipping"),
+        _iters(10)
       { }
 
       int _seed;
@@ -66,6 +69,12 @@ namespace hdi {
       unsigned int _remove_exaggeration_iter;     //! iterations with complete exaggeration of the attractive forces
       unsigned int _exponential_decay_iter;       //! iterations required to remove the exaggeration using an exponential decay
       bool _presetEmbedding;					            //! Used at initialization to use the input embedding positions 
+      
+      bool _dimenfix;
+      std::string _mode;
+      // int ordering; // 0: disable, 1: avg,
+      int _iters; // iters in between pushing and ordering
+      // bool early_start;
     };
   }
 }

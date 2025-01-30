@@ -307,18 +307,13 @@ const char* bounds_source = GLSL(430,
 const char* center_and_scale_source = GLSL(430,
   layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
   layout(std430, binding = 1) buffer BoundsInterface { vec2 Bounds[]; };
-  layout(std430, binding = 2) buffer RangeLimitInterface { vec2 RangeLimit[]; };  // range_limit input here (in percentages)
+  // layout(std430, binding = 2) buffer RangeLimitInterface { vec2 RangeLimit[]; };  // range_limit input here (in percentages)
 
-  // TODO: preprocess range_limit on CPU, calculate for per point??
   layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
   uniform uint num_points;
   uniform bool scale;
   uniform float diameter;
-
-  uniform float range_min = 0.0;
-  uniform float range_max = 100.0;
-  uniform uint num_ranges = 10;
 
   void main() {
     uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
@@ -346,27 +341,148 @@ const char* center_and_scale_source = GLSL(430,
       pos -= center;
     }
 
-    // TODO: scale x-y
+    Positions[i] = pos;
+  }
+);
+
+
+
+const char* dimenfix_source = GLSL(430,
+  layout(std430, binding = 0) buffer Pos { vec2 Positions[]; };
+  layout(std430, binding = 1) buffer BoundsInterface { vec2 Bounds[]; };
+  layout(std430, binding = 2) buffer RangeLimitInterface { vec2 RangeLimit[]; };  // range_limit input here (in percentages)
+  layout(std430, binding = 3) buffer ClassBoundsInterface { vec2 ClassBounds[]; };  // class bounds input here (if mode is rescale)
+  // layout(std430, binding = 4) buffer ClassLabels { uint ClassLabels[]; };
+
+  layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+  
+  uniform uint num_points;
+  // uniform uint num_classes;
+  // uniform float padding;
+  
+  void main() {
+    uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    uint i = workGroupID * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+
+    if (i >= num_points)
+      return;
+
+    vec2 center = (Bounds[0] + Bounds[1]) * 0.5;
+
+    vec2 pos = Positions[i];
+    float range = Bounds[1].x - Bounds[0].x;
+    
+    // resize y according to x
     float x_range = Bounds[1].x - Bounds[0].x;
     float y_range = Bounds[1].y - Bounds[0].y;
     float factor = x_range / y_range;
     pos -= center;
     pos.y *= factor;
 
-    // TODO: push here
+    // push
+    // clipping mode
     vec2 range_limit = RangeLimit[i];
     float range_size = range * (range_limit.y - range_limit.x) / 100.0f;
     float scaled_l = Bounds[0].y + range * range_limit.x / 100.0f;
     float scaled_u = scaled_l + range_size;
     pos.y = clamp(pos.y, scaled_l, scaled_u);
 
-    // uint range_index = uint(mod(float(i), float(num_ranges)));
+    // gaussian mode
 
-    // float range_size = range * (range_max - range_min) / (float(num_ranges) * 100);
-    // float scaled_min = Bounds[0].y + range_size * float(range_index);
-    // float scaled_max = scaled_min + range_size;
-    // pos.y = clamp(pos.y, scaled_min, scaled_max);
+    // rescale mode
 
     Positions[i] = pos;
+  }
+);
+
+const char* class_bounds_source = GLSL(430,
+  layout(std430, binding = 0) buffer Pos { vec2 Positions[]; };
+  layout(std430, binding = 1) buffer Labels { uint ClassLabels[]; };
+  layout(std430, binding = 2) buffer BoundsInterface { vec2 ClassBounds[]; };
+
+  layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+  
+  uniform uint num_points;
+  uniform uint num_classes;
+  uniform float padding;
+  
+  shared vec2 min_reduction[64];
+  shared vec2 max_reduction[64];
+  shared float histogram[64]; // Histogram bins for y-values
+  
+  void main() {
+    uint lid = gl_LocalInvocationIndex;
+    uint groupSize = gl_WorkGroupSize.x;
+    
+    // for (uint class_id = 0; class_id < num_classes; class_id++) {
+    //   vec2 minBound = vec2(1e38);
+    //   vec2 maxBound = vec2(-1e38);
+      
+    //   // Initialize histogram bins
+    //   for (uint i = lid; i < 64; i += groupSize) {
+    //     histogram[i] = 0;
+    //   }
+    //   barrier();
+      
+    //   // First pass: Find min/max bounds per class and populate histogram
+    //   for (uint i = lid; i < num_points; i += groupSize) {
+    //     if (ClassLabels[i] == class_id) {
+    //       vec2 pos = Positions[i];
+    //       minBound = min(pos, minBound);
+    //       maxBound = max(pos, maxBound);
+          
+    //       // Compute histogram bin (assuming normalized range -1 to 1 for simplicity)
+    //       uint bin = uint(clamp((pos.y + 1.0) * 32.0, 0, 63));
+    //       // uint temp = floatBitsToUint(histogram[bin]);
+    //       // atomicAdd(temp, 1);
+    //       // histogram[bin] = uintBitsToFloat(temp);
+    //     }
+    //   }
+    //   barrier();
+      
+    //   // Reduction step for global min/max bounds
+    //   min_reduction[lid] = minBound;
+    //   max_reduction[lid] = maxBound;
+    //   barrier();
+      
+    //   for (uint stride = 32; stride > 0; stride /= 2) {
+    //     if (lid < stride) {
+    //       min_reduction[lid] = min(min_reduction[lid], min_reduction[lid + stride]);
+    //       max_reduction[lid] = max(max_reduction[lid], max_reduction[lid + stride]);
+    //     }
+    //     barrier();
+    //   }
+      
+    //   // Compute cumulative histogram to determine 95% bounds
+    //   if (lid == 0) {
+    //     float total_count = 0;
+    //     for (uint i = 0; i < 64; i++) total_count += histogram[i];
+        
+    //     float lower_thresh = total_count * 0.025;
+    //     float upper_thresh = total_count * 0.975;
+        
+    //     float cumsum = 0;
+    //     float lower_bound = -1.0;
+    //     float upper_bound = 1.0;
+        
+    //     for (uint i = 0; i < 64; i++) {
+    //       cumsum += histogram[i];
+    //       if (cumsum >= lower_thresh && lower_bound == -1.0) lower_bound = (i / 32.0) - 1.0;
+    //       if (cumsum >= upper_thresh) {
+    //         upper_bound = (i / 32.0) - 1.0;
+    //         break;
+    //       }
+    //     }
+        
+    //     vec2 minBound = min_reduction[0];
+    //     vec2 maxBound = max_reduction[0];
+        
+    //     vec2 padding_vec = (maxBound - minBound) * padding * 0.5;
+    //     minBound -= padding_vec;
+    //     maxBound += padding_vec;
+        
+    //     ClassBounds[class_id] = vec4(minBound.y, maxBound.y, lower_bound, upper_bound);
+    //   }
+    // }
   }
 );
