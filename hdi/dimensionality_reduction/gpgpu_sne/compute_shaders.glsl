@@ -376,8 +376,23 @@ const char* dimenfix_source = GLSL(430,
     if (mode == 0) { // clipping
       pos.y = clamp(pos.y, scaled_l, scaled_u);
     }
-    else if (mode == 1) { // TODO: gaussian
-      pos.y *= 1.0f;
+    else if (mode == 1) { // gaussian
+      float z = 1.64485; // TODO: change to CPU input
+
+      float sigma;
+
+      if (abs(scaled_u - scaled_l) <= 1e-6) {
+          sigma = range_size / (0.1 * z); // Fixed value case
+      }
+      else {
+          sigma = (scaled_u - scaled_l) * range_size * 0.9 / (2.0 * z);
+      }
+
+      float ori_pos = (scaled_l + scaled_u) / 2.0;
+      float diff = pos.y - ori_pos;
+      float ds = diff * exp(- (diff * diff) / (2.0 * sigma * sigma));
+
+      pos.y = ori_pos + ds;
     }
     else if (mode == 2) { // rescale
       vec2 class_bound = ClassBounds[i];
