@@ -365,30 +365,33 @@ const char* dimenfix_source = GLSL(430,
     if (i >= num_points)
       return;
 
-    // TODO: to integrate rescaling, push first then align xy axis size!!!
-    vec2 center = (Bounds[0] + Bounds[1]) * 0.5;
-
     vec2 pos = Positions[i];
-    float range = Bounds[1].x - Bounds[0].x;
-    
-    // resize y according to x
-    float x_range = Bounds[1].x - Bounds[0].x;
-    float y_range = Bounds[1].y - Bounds[0].y;
-    float factor = x_range / y_range;
-    pos -= center;
-    pos.y *= factor;
-
-    // push
-    // clipping mode
+    float range = Bounds[1].y - Bounds[0].y;
     vec2 range_limit = RangeLimit[i];
     float range_size = range * (range_limit.y - range_limit.x) / 100.0f;
     float scaled_l = Bounds[0].y + range * range_limit.x / 100.0f;
     float scaled_u = scaled_l + range_size;
-    pos.y = clamp(pos.y, scaled_l, scaled_u);
 
-    // gaussian mode
+    // to integrate rescaling, push first then align xy axis size
+    if (mode == 0) { // clipping
+      pos.y = clamp(pos.y, scaled_l, scaled_u);
+    }
+    else if (mode == 1) { // TODO: gaussian
+      pos.y *= 1.0f;
+    }
+    else if (mode == 2) { // rescale
+      vec2 class_bound = ClassBounds[i];
+      float scale = range_size / (class_bound.y - class_bound.x);
+      float new_center = (scaled_l + scaled_u) / 2;
+      float old_center = (class_bound.x + class_bound.y) / 2;
+      pos.y = (pos.y - old_center) * scale + new_center;
+    }
 
-    // rescale mode
+    // resize y according to x
+    float x_range = Bounds[1].x - Bounds[0].x;
+    float y_range = Bounds[1].y - Bounds[0].y;
+    float factor = x_range / y_range;
+    pos.y *= factor;
 
     Positions[i] = pos;
   }
