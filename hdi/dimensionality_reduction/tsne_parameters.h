@@ -75,6 +75,7 @@ namespace hdi {
       // int ordering; // 0: disable, 1: avg,
       int _iters; // iters in between pushing and ordering
       // bool early_start;
+      std::string _fix_selection;
     };
   }
 }

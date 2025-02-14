@@ -112,7 +112,8 @@ namespace hdi {
 
       std::cout << "dimenfix: " << _params._dimenfix << ", ";
       std::cout << "every " << _params._iters << " iters, ";
-      std::cout << "mode: " << _params._mode << std::endl;
+      std::cout << "mode: " << _params._mode << ", ";
+      std::cout << "fixed_axis: " << _params._fix_selection << std::endl;
 
       _initialized = true;
     }
