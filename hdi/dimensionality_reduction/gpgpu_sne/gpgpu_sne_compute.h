@@ -73,7 +73,7 @@ namespace hdi {
     public:
       GpgpuSneCompute();
 
-      void initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P, const std::vector<Point2D>& range_limit);
+      void initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P, const std::vector<Point2D>& range_limit, std::vector<int> labels);
       void clean();
 
       void compute(embedding_type* embedding, float exaggeration, float iteration, float mult);
@@ -89,7 +89,7 @@ namespace hdi {
       bool isInitialized() { return _initialized == true; }
 
     private:
-      void initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P, const std::vector<Point2D>& range_limit);
+      void initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P, const std::vector<Point2D>& range_limit, std::vector<int> labels);
 
       Bounds2D computeEmbeddingBounds(const embedding_type* embedding, float padding = 0);
 
@@ -103,6 +103,7 @@ namespace hdi {
       void updateEmbedding(unsigned int num_points, float exaggeration, float iteration, float mult);
       void calcClassBounds(unsigned int num_points, float iteration, float mult);
       void pushEmbedding(unsigned int num_points, float iteration, float mult);
+      void updateOrder(unsigned int num_points, float iteration, float mult);
 
     private:
       const unsigned int FIXED_FIELDS_SIZE = 40;

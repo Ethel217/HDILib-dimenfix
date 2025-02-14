@@ -83,7 +83,7 @@ namespace hdi {
       return bounds;
     }
 
-    void GpgpuSneCompute::initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P, const std::vector<Point2D>& range_limit) {
+    void GpgpuSneCompute::initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P, const std::vector<Point2D>& range_limit, std::vector<int> labels) {
       _params = params;
 
       unsigned int num_points = embedding->numDataPoints();
@@ -108,7 +108,7 @@ namespace hdi {
       _function_support = 6.5f;
 
       // Initialize all OpenGL resources
-      initializeOpenGL(num_points, linear_P, range_limit);
+      initializeOpenGL(num_points, linear_P, range_limit, labels);
 
       std::cout << "dimenfix: " << _params._dimenfix << ", ";
       std::cout << "every " << _params._iters << " iters, ";
@@ -124,7 +124,7 @@ namespace hdi {
       fieldComputation.clean();
     }
 
-    void GpgpuSneCompute::initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P, const std::vector<Point2D>& range_limit) {
+    void GpgpuSneCompute::initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P, const std::vector<Point2D>& range_limit, std::vector<int> labels) {
       glClearColor(0, 0, 0, 0);
 
       fieldComputation.init(num_points);
@@ -209,26 +209,24 @@ namespace hdi {
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[RANGE_LIMITS]);
       glBufferData(GL_SHADER_STORAGE_BUFFER, range_limit.size() * sizeof(Point2D), range_limit.data(), GL_STATIC_DRAW);
 
-      // input labels
-      // TODO: link to upload UI
-      // read txt for labels
-      std::vector<int> labels;
-      std::ifstream labelFile("C:\\Users\\zixuanhan\\Thesis\\Evaluation\\mnist_labels.txt");
-      if (labelFile.is_open())
-      {
-        int label;
-        while (labelFile >> label)
-          {
-              labels.push_back(label);
-          }
-          labelFile.close();
-          std::cout << "Successfully loaded labels file." << std::endl;
-      }
-      else
-      {
-          std::cout << "Error: Could not open labels file.";
-          return;
-      }
+      // unused: read txt for labels
+      // std::vector<int> labels;
+      // std::ifstream labelFile("C:\\Users\\zixuanhan\\Thesis\\Evaluation\\mnist_labels.txt");
+      // if (labelFile.is_open())
+      // {
+      //   int label;
+      //   while (labelFile >> label)
+      //     {
+      //         labels.push_back(label);
+      //     }
+      //     labelFile.close();
+      //     std::cout << "Successfully loaded labels file." << std::endl;
+      // }
+      // else
+      // {
+      //     std::cout << "Error: Could not open labels file.";
+      //     return;
+      // }
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[LABELS]);
       glBufferData(GL_SHADER_STORAGE_BUFFER, labels.size() * sizeof(int), labels.data(), GL_STATIC_DRAW);
 
@@ -438,6 +436,31 @@ namespace hdi {
       unsigned int num_workgroups = (num_points / 128) + 1;
       unsigned int grid_size = sqrt(num_workgroups) + 1;
       glDispatchCompute(grid_size, grid_size, 1);
+    }
+
+    void GpgpuSneCompute::updateOrder(unsigned int num_points, float iteration, float mult) {
+      // TODO: calc average position in this function
+      // bind range limits
+      // do PCA on whole embedding: update embedding
+      // calc average positions of each class and update range limit
+      std::vector<Point2D> positions(num_points);
+      std::vector<int> class_labels(num_points);
+
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[LABELS]);
+      glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(int), class_labels.data());
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[POSITION]);
+      glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), positions.data());
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+      std::unordered_map<uint32_t, std::vector<float>> class_points;
+
+      for (size_t i = 0; i < positions.size(); i++) {
+          int class_id = class_labels[i];
+          float y = positions[i].y;
+          class_points[class_id].push_back(y);
+      }
     }
 
     void GpgpuSneCompute::calcClassBounds(unsigned int num_points, float iteration, float mult) {
