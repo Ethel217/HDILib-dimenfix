@@ -2,7 +2,7 @@
 
 #include "gpgpu_sne_compute.h"
 #include "compute_shaders.glsl"
-// #include <opencv2/opencv.hpp>
+#include "opencv2\opencv.hpp"
 
 #include <vector>
 #include <limits>
@@ -434,29 +434,28 @@ namespace hdi {
       glDispatchCompute(grid_size, grid_size, 1);
     }
 
-    // void computePCA(std::vector<Point2D>& points) {
-    //   int num_points = points.size();
-    //   cv::Mat data(num_points, 2, CV_32F);
+    void computePCA(std::vector<Point2D>& points) {
+      int num_points = points.size();
+      cv::Mat data(num_points, 2, CV_32F);
   
-    //   // Load data into OpenCV Mat
-    //   for (int i = 0; i < num_points; ++i) {
-    //       data.at<float>(i, 0) = points[i].x;
-    //       data.at<float>(i, 1) = points[i].y;
-    //   }
+      // Load data into OpenCV Mat
+      for (int i = 0; i < num_points; ++i) {
+          data.at<float>(i, 0) = points[i].x;
+          data.at<float>(i, 1) = points[i].y;
+      }
   
-    //   // Compute PCA
-    //   cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 2);
-    //   cv::Mat reduced = pca.project(data);
+      // Compute PCA
+      cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 2);
+      cv::Mat reduced = pca.project(data);
   
-    //   // Update points
-    //   for (int i = 0; i < num_points; ++i) {
-    //       points[i].x = reduced.at<float>(i, 0);
-    //       points[i].y = reduced.at<float>(i, 1);
-    //   }
-    // }
+      // Update points
+      for (int i = 0; i < num_points; ++i) {
+          points[i].y = reduced.at<float>(i, 0);
+          points[i].x = reduced.at<float>(i, 1);
+      }
+    }
 
     void GpgpuSneCompute::updateOrder(unsigned int num_points, float iteration, float mult) {
-      // TODO: calc average position in this function
       // calc average positions of each class and update range limit
       std::vector<Point2D> positions(num_points);
       std::vector<int> class_labels(num_points);
@@ -475,7 +474,8 @@ namespace hdi {
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
       // TODO: Perform PCA on positions (embedding update)
-      // computePCA(positions);
+      // TODO:!!! rotation!! switch x and y axis: put y axis on major variance
+      computePCA(positions);
 
       // record class ranges
 
