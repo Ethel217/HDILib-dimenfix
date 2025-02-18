@@ -412,6 +412,7 @@ const char* dimenfix_source = GLSL(430,
   }
 );
 
+// unused
 const char* class_bounds_source = GLSL(430,
   layout(std430, binding = 0) buffer Pos { vec2 Positions[]; };
   layout(std430, binding = 1) buffer Labels { uint ClassLabels[]; };

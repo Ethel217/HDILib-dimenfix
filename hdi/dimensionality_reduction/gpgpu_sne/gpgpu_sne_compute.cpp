@@ -2,6 +2,7 @@
 
 #include "gpgpu_sne_compute.h"
 #include "compute_shaders.glsl"
+// #include <opencv2/opencv.hpp>
 
 #include <vector>
 #include <limits>
@@ -113,6 +114,7 @@ namespace hdi {
       std::cout << "dimenfix: " << _params._dimenfix << ", ";
       std::cout << "every " << _params._iters << " iters, ";
       std::cout << "mode: " << _params._mode << ", ";
+      std::cout << "class order: " << _params._class_order << ", ";
       std::cout << "fixed_axis: " << _params._fix_selection << std::endl;
 
       _initialized = true;
@@ -210,24 +212,6 @@ namespace hdi {
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[RANGE_LIMITS]);
       glBufferData(GL_SHADER_STORAGE_BUFFER, range_limit.size() * sizeof(Point2D), range_limit.data(), GL_STATIC_DRAW);
 
-      // unused: read txt for labels
-      // std::vector<int> labels;
-      // std::ifstream labelFile("C:\\Users\\zixuanhan\\Thesis\\Evaluation\\mnist_labels.txt");
-      // if (labelFile.is_open())
-      // {
-      //   int label;
-      //   while (labelFile >> label)
-      //     {
-      //         labels.push_back(label);
-      //     }
-      //     labelFile.close();
-      //     std::cout << "Successfully loaded labels file." << std::endl;
-      // }
-      // else
-      // {
-      //     std::cout << "Error: Could not open labels file.";
-      //     return;
-      // }
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[LABELS]);
       glBufferData(GL_SHADER_STORAGE_BUFFER, labels.size() * sizeof(int), labels.data(), GL_STATIC_DRAW);
 
@@ -311,11 +295,22 @@ namespace hdi {
       updateEmbedding(num_points, exaggeration, iteration, mult); // rescale and center
 
       // new
-      if (_params._dimenfix && (unsigned int)iteration % _params._iters == 0) {
-        if (_params._mode == "rescale") {
-          calcClassBounds(num_points, iteration, mult);
+      if (_params._dimenfix && (unsigned int)(iteration + 1) % _params._iters == 0) {
+        if (_params._class_order == "avg" && (unsigned int)iteration >= _params._remove_exaggeration_iter) {
+          // edit range limit using average position of class
+          updateOrder(num_points, iteration, mult);
+          if (_params._mode == "rescale") {
+            calcClassBounds(num_points, iteration, mult);
+          }
+          pushEmbedding(num_points, iteration, mult);
         }
-        pushEmbedding(num_points, iteration, mult);
+        else if (_params._class_order != "avg") {
+          if (_params._mode == "rescale") {
+            calcClassBounds(num_points, iteration, mult);
+          }
+          pushEmbedding(num_points, iteration, mult);
+        }
+        
       }
 
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[POSITION]);
@@ -439,13 +434,33 @@ namespace hdi {
       glDispatchCompute(grid_size, grid_size, 1);
     }
 
+    // void computePCA(std::vector<Point2D>& points) {
+    //   int num_points = points.size();
+    //   cv::Mat data(num_points, 2, CV_32F);
+  
+    //   // Load data into OpenCV Mat
+    //   for (int i = 0; i < num_points; ++i) {
+    //       data.at<float>(i, 0) = points[i].x;
+    //       data.at<float>(i, 1) = points[i].y;
+    //   }
+  
+    //   // Compute PCA
+    //   cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 2);
+    //   cv::Mat reduced = pca.project(data);
+  
+    //   // Update points
+    //   for (int i = 0; i < num_points; ++i) {
+    //       points[i].x = reduced.at<float>(i, 0);
+    //       points[i].y = reduced.at<float>(i, 1);
+    //   }
+    // }
+
     void GpgpuSneCompute::updateOrder(unsigned int num_points, float iteration, float mult) {
       // TODO: calc average position in this function
-      // bind range limits
-      // do PCA on whole embedding: update embedding
       // calc average positions of each class and update range limit
       std::vector<Point2D> positions(num_points);
       std::vector<int> class_labels(num_points);
+      std::vector<Point2D> range_limits(num_points);
 
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[LABELS]);
       glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(int), class_labels.data());
@@ -455,13 +470,59 @@ namespace hdi {
       glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), positions.data());
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-      std::unordered_map<uint32_t, std::vector<float>> class_points;
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[RANGE_LIMITS]);
+      glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), range_limits.data());
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-      for (size_t i = 0; i < positions.size(); i++) {
-          int class_id = class_labels[i];
-          float y = positions[i].y;
-          class_points[class_id].push_back(y);
+      // TODO: Perform PCA on positions (embedding update)
+      // computePCA(positions);
+
+      // record class ranges
+
+      // compute avg class positions y
+      std::unordered_map<int, float> class_sums_y;
+      std::unordered_map<int, int> class_counts;
+
+      for (unsigned int i = 0; i < num_points; i++) {
+          class_sums_y[class_labels[i]] += positions[i].y;
+          class_counts[class_labels[i]]++;
       }
+
+      // update range limits + buffer
+      // Arrange class positions within range [0, 100] based on their average y position
+      float min_y = 0.0f, max_y = 100.0f;
+      std::vector<std::pair<int, float>> sorted_classes;
+      for (std::unordered_map<int, float>::iterator it = class_sums_y.begin(); it != class_sums_y.end(); ++it) {
+          int cls = it->first;
+          float sum_y = it->second;
+          sorted_classes.push_back(std::make_pair(cls, sum_y / class_counts[cls]));
+      }
+      std::sort(sorted_classes.begin(), sorted_classes.end(), [](const auto& a, const auto& b) {
+          return a.second < b.second;
+      });
+
+      // Assign range limits for each class
+      float current_y = min_y;
+      for (int i = 0;i < sorted_classes.size();i ++) {
+        int cls = sorted_classes[i].first;
+        float height = (max_y - min_y) * (class_counts[cls] / (float)num_points);
+          for (unsigned int i = 0; i < num_points; i++) {
+              if (class_labels[i] == cls) {
+                  range_limits[i].x = current_y;
+                  range_limits[i].y = current_y + height;
+              }
+          }
+          current_y += height;
+      }
+
+      // Write updated range limits back to GPU buffer
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[RANGE_LIMITS]);
+      glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), range_limits.data());
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+      // update points positions
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[POSITION]);
+      glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), positions.data());
     }
 
     void GpgpuSneCompute::calcClassBounds(unsigned int num_points, float iteration, float mult) {
