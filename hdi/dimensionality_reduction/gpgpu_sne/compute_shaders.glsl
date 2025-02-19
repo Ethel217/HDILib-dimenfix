@@ -312,7 +312,7 @@ const char* center_and_scale_source = GLSL(430,
   layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
   uniform uint num_points;
-  uniform bool scale;
+  uniform uint scale;
   uniform float diameter;
 
   void main() {
@@ -327,7 +327,7 @@ const char* center_and_scale_source = GLSL(430,
     vec2 pos = Positions[i];
     float range = Bounds[1].x - Bounds[0].x;
 
-    if (scale)
+    if (scale == 1)
     {
       if (range < diameter) //  || range.y < diameter
       {
@@ -335,6 +335,10 @@ const char* center_and_scale_source = GLSL(430,
         pos -= center;
         pos *= scale_factor;
       }
+    }
+    else if (scale == 2) {
+      pos -= center;
+      pos *= diameter;
     }
     else
     {
@@ -357,6 +361,7 @@ const char* dimenfix_source = GLSL(430,
   
   uniform uint num_points;
   uniform uint mode;
+  uniform uint aswitch;
   
   void main() {
     uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
@@ -408,7 +413,13 @@ const char* dimenfix_source = GLSL(430,
     float factor = x_range / y_range;
     pos.y *= factor;
 
-    Positions[i] = pos;
+    if (aswitch == 1) { // move half way there
+      Positions[i].x = pos.x;
+      Positions[i].y = (pos.y + Positions[i].y * factor) / 2;
+    }
+    else {
+      Positions[i] = pos;
+    }
   }
 );
 

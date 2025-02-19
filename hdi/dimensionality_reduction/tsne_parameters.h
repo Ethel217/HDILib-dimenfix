@@ -54,7 +54,8 @@ namespace hdi {
         _dimenfix(false), //TODO: set to true for testing, false for usage
         _mode("clipping"),
         _iters(10),
-        _class_order("random")
+        _class_order("random"),
+        _switch_axis(false)
       { }
 
       int _seed;
@@ -74,9 +75,9 @@ namespace hdi {
       bool _dimenfix;
       std::string _mode;
       int _iters; // iters in between pushing and ordering
-      // bool early_start;
       std::string _fix_selection;
       std::string _class_order;
+      bool _switch_axis;
     };
   }
 }

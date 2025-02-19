@@ -115,6 +115,7 @@ namespace hdi {
       std::cout << "every " << _params._iters << " iters, ";
       std::cout << "mode: " << _params._mode << ", ";
       std::cout << "class order: " << _params._class_order << ", ";
+      std::cout << "switch axis: " << _params._switch_axis << ", ";
       std::cout << "fixed_axis: " << _params._fix_selection << std::endl;
 
       _initialized = true;
@@ -286,6 +287,10 @@ namespace hdi {
         return;
       }
 
+      if (_params._switch_axis) { // disable exaggeration in switching
+        exaggeration = 1;
+      }
+
       // Compute the gradients of the KL-function
       computeGradients(num_points, sum_Q, exaggeration);
 
@@ -420,12 +425,16 @@ namespace hdi {
 
       if (exaggeration > 1.2)
       {
-        _center_and_scale_program.uniform1i("scale", 1);
+        _center_and_scale_program.uniform1ui("scale", 1);
         _center_and_scale_program.uniform1f("diameter", 0.1f);
+      }
+      else if (_params._switch_axis && iteration < 50 && (int)iteration % 5 == 0) {
+        _center_and_scale_program.uniform1ui("scale", 2);
+        _center_and_scale_program.uniform1f("diameter", 0.3f); // the scale, can add as input
       }
       else
       {
-        _center_and_scale_program.uniform1i("scale", 0);
+        _center_and_scale_program.uniform1ui("scale", 0);
       }
 
       // Compute the bounds
@@ -444,11 +453,10 @@ namespace hdi {
           data.at<float>(i, 1) = points[i].y;
       }
   
-      // Compute PCA
       cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 2);
       cv::Mat reduced = pca.project(data);
   
-      // Update points
+      // x-y axis are switched, so that y-axis has largest variance
       for (int i = 0; i < num_points; ++i) {
           points[i].y = reduced.at<float>(i, 0);
           points[i].x = reduced.at<float>(i, 1);
@@ -473,11 +481,8 @@ namespace hdi {
       glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), range_limits.data());
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-      // TODO: Perform PCA on positions (embedding update)
-      // TODO:!!! rotation!! switch x and y axis: put y axis on major variance
+      // PCA on positions (embedding update)
       computePCA(positions);
-
-      // record class ranges
 
       // compute avg class positions y
       std::unordered_map<int, float> class_sums_y;
@@ -600,8 +605,15 @@ namespace hdi {
       else if (_params._mode == "gaussian") {
         _dimenfix_program.uniform1ui("mode", 1);
       }
-      if (_params._mode == "rescale") {
+      else if (_params._mode == "rescale") {
         _dimenfix_program.uniform1ui("mode", 2);
+      }
+
+      if (_params._switch_axis && iteration < 50) { // iter val should be add to input
+        _dimenfix_program.uniform1ui("aswitch", 1);
+      }
+      else {
+        _dimenfix_program.uniform1ui("aswitch", 0);
       }
 
       // Bind required buffers to shader program
