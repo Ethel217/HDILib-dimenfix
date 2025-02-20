@@ -128,11 +128,6 @@ include(CMakePackageConfigHelpers)
 # Generate the version file for use with find_package
 set(hdilib_package_version "${HDILib_VERSION}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake" @ONLY)
-#write_basic_package_version_file(
-#  "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake"
-#  VERSION "${HDILib_VERSION}"
-#  COMPATIBILITY ExactVersion
-#)
 
 set(INCLUDE_INSTALL_DIR include)
 set(LIB_INSTALL_DIR lib)
