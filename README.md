@@ -46,6 +46,11 @@ Reference to cite when you use HDI in a research paper:
 With the latest git versions you shoule use the following command:
 ```bash
 git clone --recurse-submodules https://github.com/Ethel217/HDILib-dimenfix.git
+
+//or
+
+git clone https://github.com/Ethel217/HDILib-dimenfix.git
+git submodule update --init --recursive
 ```
 
 ### Requirements

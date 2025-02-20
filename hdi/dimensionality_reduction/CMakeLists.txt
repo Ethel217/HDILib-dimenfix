@@ -16,6 +16,10 @@ message (STATUS "HNSWLIB: " ${HNSWLIB_INCLUDE_DIR})
 get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/annoy/src" REALPATH)
 target_include_directories(${PROJECT} PRIVATE ${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
+# Link OpenCV to the project
+find_package(OpenCV REQUIRED)
+# Add include directories
+include_directories(${PROJECT} PRIVATE ${OpenCV_INCLUDE_DIRS})
 
 # prefer static linking
 if(NOT FLANN_TARGET)
