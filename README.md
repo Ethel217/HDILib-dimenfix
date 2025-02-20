@@ -66,8 +66,8 @@ On Windows with vcpkg
 .\vcpkg install opencv4:x64-windows-static-md
 .\vcpkg install quirc:x64-windows-static-md
 .\vcpkg install tiff:x64-windows-static-md
-.\vcpkg install utf8_range:x64-windows-static-md
-.\vcpkg install absl:x64-windows-static-md
+.\vcpkg install utf8-range:x64-windows-static-md
+.\vcpkg install abseil:x64-windows-static-md
 .\vcpkg install protobuf:x64-windows-static-md
 .\vcpkg install flann:x64-windows-static-md
 .\vcpkg install lz4:x64-windows-static-md
@@ -99,7 +99,7 @@ mkdir build
 //navigate to build directory
 cd build
 
-cmake .. -DCMAKE_INSTALL_PREFIX="C:\Users\soumyadeep\FinalPluginSystem\LatestCustomPlugins\DimenFixTSNE\HDILib-dimenfix\install" -Dlz4_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\lz4" -Dflann_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\flann" -DOpenCV_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\opencv4" -DProtobuf_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\protobuf" -DProtobuf_PROTOC_EXECUTABLE="C:\Users\soumyadeep\FinalPluginSystem\LatestCustomPlugins\DimenFixTSNE\vcpkg\installed\x64-windows-static-md\tools\protobuf\protoc.exe" -Dabsl_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\absl" -Dutf8_range_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\utf8_range" -DTIFF_INCLUDE_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\include" -DTIFF_LIBRARY="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\lib\tiff.lib" -Dquirc_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\quirc"
+cmake .. -DCMAKE_INSTALL_PREFIX="{PATH_INSTALL_DIR}\HDILib-dimenfix\install" -Dlz4_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\lz4" -Dflann_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\flann" -DOpenCV_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\opencv4" -DProtobuf_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\protobuf" -DProtobuf_PROTOC_EXECUTABLE="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\tools\protobuf\protoc.exe" -Dabsl_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\absl" -Dutf8_range_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\utf8_range" -DTIFF_INCLUDE_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\include" -DTIFF_LIBRARY="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\lib\tiff.lib" -Dquirc_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\quirc"
 
 cmake --build ../build --config Release --target install
 
