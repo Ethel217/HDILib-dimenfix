@@ -1,6 +1,7 @@
 *~
 _build*
 build/
+install/
 CMakeLists.txt.user*
 .DS_Store
 /.vs/*
