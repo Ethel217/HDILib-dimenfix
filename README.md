@@ -54,11 +54,18 @@ HDILib depends on [FLANN](https://github.com/mariusmuja/flann) (version >= 1.9.1
 
 Flann can be built from the source but we recommend vcpkg to install it, especially on Windows.
 
-### Installing flann 
+### Installing flann and other dependencies
 
 On Windows with vcpkg
 ```bash
+.\vcpkg install opencv4:x64-windows-static-md
+.\vcpkg install quirc:x64-windows-static-md
+.\vcpkg install tiff:x64-windows-static-md
+.\vcpkg install utf8_range:x64-windows-static-md
+.\vcpkg install absl:x64-windows-static-md
+.\vcpkg install protobuf:x64-windows-static-md
 .\vcpkg install flann:x64-windows-static-md
+.\vcpkg install lz4:x64-windows-static-md
 ```
 When configuring cmake make sure to setup vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH_TO/vcpkg/scripts/buildsystems/vcpkg.cmake`) and use the same VCPKG_TARGET_TRIPLET as for installing flann, here `x64-windows-static-md`. vcpkg will automatically install LZ4 with Flann.
 
@@ -74,10 +81,23 @@ brew install flann lz4 pkg-config
 ### Generate the build files
 
 **Windows**
-This will produce a HDILib.sln file for VisualStudio. 
+This will produce a HDILib.sln file for VisualStudio and build the solution. 
 Open the .sln in VisualStudio and build ALL_BUILD for Release or Debug matching the CMAKE_BUILD_TYPE.
 ```cmd
-cmake -S . -B build -G "Visual Studio 16 2019" -A "x64" -DCMAKE_TOOLCHAIN_FILE=.\build\conan_toolchain.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_INSTALL_PREFIX=install
+
+//navigate to project directory
+cd HDILib-dimenfix
+
+//create build directory
+mkdir build
+
+//navigate to build directory
+cd build
+
+cmake .. -DCMAKE_INSTALL_PREFIX="C:\Users\soumyadeep\FinalPluginSystem\LatestCustomPlugins\DimenFixTSNE\HDILib-dimenfix\install" -Dlz4_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\lz4" -Dflann_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\flann" -DOpenCV_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\opencv4" -DProtobuf_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\protobuf" -DProtobuf_PROTOC_EXECUTABLE="C:\Users\soumyadeep\FinalPluginSystem\LatestCustomPlugins\DimenFixTSNE\vcpkg\installed\x64-windows-static-md\tools\protobuf\protoc.exe" -Dabsl_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\absl" -Dutf8_range_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\utf8_range" -DTIFF_INCLUDE_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\include" -DTIFF_LIBRARY="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\lib\tiff.lib" -Dquirc_DIR="{PATH_TO_VCPKG_DIR}\vcpkg\installed\x64-windows-static-md\share\quirc"
+
+cmake --build ../build --config Release --target install
+
 ```
 
 **Linux**
@@ -87,7 +107,7 @@ This will produce a Makefile, other generators like ninja are also possible. Use
 cmake  -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DHDILib_ENABLE_PID=ON -G "Unix Makefiles"
 
 // build and install the libary, independent of generator
-cmake --build build --config Release --target install
+cmake --build ../build --config Release --target install
 ```
 
 **Macos**

@@ -110,12 +110,24 @@ else()
     message(WARNING, "OpenMP not found!")
 endif()
 
+# Add OpenCV
+find_package(OpenCV REQUIRED)
+if(NOT ${OpenCV_FOUND})
+    message(FATAL_ERROR "OpenCV NOT found")
+endif()
+message(STATUS "Found OpenCV version ${OpenCV_VERSION}")
+
+
+
 # -----------------------------------------------------------------------------
 # Projects
 # -----------------------------------------------------------------------------
 add_subdirectory (hdi/utils)
 add_subdirectory (hdi/data)
 add_subdirectory (hdi/dimensionality_reduction)
+
+# Link OpenCV to the dimensionality reduction target
+target_link_libraries(hdidimensionalityreduction PRIVATE ${OpenCV_LIBS})
 
 # -----------------------------------------------------------------------------
 # Create HDILib find_package
@@ -151,4 +163,3 @@ if(${HDILib_INSTALL})
             COMPONENT HDI_PACKAGE
     )
 endif()
-
