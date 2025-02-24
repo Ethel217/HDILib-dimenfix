@@ -55,7 +55,8 @@ namespace hdi {
         _mode("clipping"),
         _iters(10),
         _class_order("random"),
-        _switch_axis(false)
+        _switch_axis(false),
+        _alpha(1.0f)
       { }
 
       int _seed;
@@ -78,6 +79,7 @@ namespace hdi {
       std::string _fix_selection;
       std::string _class_order;
       bool _switch_axis;
+      float _alpha;
     };
   }
 }

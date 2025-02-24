@@ -116,6 +116,7 @@ namespace hdi {
       std::cout << "mode: " << _params._mode << ", ";
       std::cout << "class order: " << _params._class_order << ", ";
       std::cout << "switch axis: " << _params._switch_axis << ", ";
+      std::cout << "alpha: " << _params._alpha << ", ";
       std::cout << "fixed_axis: " << _params._fix_selection << std::endl;
 
       _initialized = true;
@@ -494,6 +495,7 @@ namespace hdi {
       }
 
       // update range limits + buffer
+      // TODO: arrange ORIGINAL ranges
       // Arrange class positions within range [0, 100] based on their average y position
       float min_y = 0.0f, max_y = 100.0f;
       std::vector<std::pair<int, float>> sorted_classes;
