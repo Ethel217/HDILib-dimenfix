@@ -203,6 +203,14 @@ namespace hdi {
 #endif
     }
 
+    void GradientDescentTSNETexture::updateArrays(std::vector<GpgpuSneCompute::Point2D> range_limit, std::vector<int> labels){
+      // TODO: for raster as well
+      if (!_initialized) {
+        throw std::runtime_error("GradientDescentTSNETexture must be initialized before updating the tsne parameters");
+      }
+      _gpgpu_compute_tsne.updateArrays(range_limit, labels);
+    }
+
     void GradientDescentTSNETexture::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities) {
       utils::secureLog(_logger, "Computing high-dimensional joint probability distribution...");
 

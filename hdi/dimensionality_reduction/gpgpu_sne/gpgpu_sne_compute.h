@@ -79,17 +79,19 @@ namespace hdi {
       void compute(embedding_type* embedding, float exaggeration, float iteration, float mult);
 
       void setScalingFactor(float factor) { _resolutionScaling = factor; }
-	  //!  Change the runtime configurable params
-	  void updateParams(TsneParameters params) { 
-		  if (!_initialized) {
-			  throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
-		  }
-		  _params = params; 
-	  };
+      //!  Change the runtime configurable params
+      void updateParams(TsneParameters params) { 
+        if (!_initialized) {
+          throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
+        }
+        _params = params; 
+      };
+      void updateArrays(std::vector<GpgpuSneCompute::Point2D> range_limit, std::vector<int> labels);
       bool isInitialized() { return _initialized == true; }
 
     private:
       void initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P, const std::vector<Point2D>& range_limit, std::vector<int> labels);
+      
 
       Bounds2D computeEmbeddingBounds(const embedding_type* embedding, float padding = 0);
 

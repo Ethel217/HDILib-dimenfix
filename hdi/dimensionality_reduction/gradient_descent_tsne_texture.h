@@ -76,6 +76,8 @@ namespace hdi {
       void initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters(), const std::vector<GpgpuSneCompute::Point2D>& range_limit = std::vector<GpgpuSneCompute::Point2D>(), std::vector<int> labels = {});
       //! Change the runtime modifiable tsne parameters
       void updateParams(TsneParameters params);
+      // change array inputs: label and ranges
+      void updateArrays(std::vector<GpgpuSneCompute::Point2D> range_limit, std::vector<int> labels);
       //! Reset the internal state of the class but it keeps the inserted data-points
       void reset();
       //! Reset the class and remove all the data points

@@ -288,7 +288,7 @@ namespace hdi {
         return;
       }
 
-      if (_params._switch_axis) { // disable exaggeration in switching
+      if (_params._switch_axis) { // disable exaggeration in switching, probably dont need this
         exaggeration = 1;
       }
 
@@ -429,7 +429,7 @@ namespace hdi {
         _center_and_scale_program.uniform1ui("scale", 1);
         _center_and_scale_program.uniform1f("diameter", 0.1f);
       }
-      else if (_params._switch_axis && iteration < 50 && (int)iteration % 5 == 0) {
+      else if (_params._switch_axis && (int)iteration % 5 == 0) { // iteration limit: input
         _center_and_scale_program.uniform1ui("scale", 2);
         _center_and_scale_program.uniform1f("diameter", 0.3f); // the scale, can add as input
       }
@@ -462,6 +462,34 @@ namespace hdi {
           points[i].y = reduced.at<float>(i, 0);
           points[i].x = reduced.at<float>(i, 1);
       }
+    }
+
+    void GpgpuSneCompute::updateArrays(std::vector<Point2D> range_limit, std::vector<int> labels) {
+      std::vector<Point2D> rl = range_limit;
+      // for (int i = 0;i < 10;i ++) {
+      //   std::cout << rl[i].x << " ";
+      // }
+      // std::cout << rl.size();
+
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[RANGE_LIMITS]);
+      glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, rl.size() * sizeof(Point2D), rl.data());
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+      std::cout << "check ranges update" << std::endl;
+      std::vector<Point2D> data(10);
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[RANGE_LIMITS]);
+      glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 10 * sizeof(Point2D), data.data());
+      // TODO: why is this 0???
+
+      for (const auto& point : data) {
+          std::cout << "(" << point.x << ", " << point.y << ") ";
+      }
+      std::cout << std::endl;
+
+
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[LABELS]);
+      glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, labels.size() * sizeof(int), labels.data());
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
     void GpgpuSneCompute::updateOrder(unsigned int num_points, float iteration, float mult) {
@@ -530,6 +558,7 @@ namespace hdi {
       // update points positions
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[POSITION]);
       glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), positions.data());
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }
 
     void GpgpuSneCompute::calcClassBounds(unsigned int num_points, float iteration, float mult) {
@@ -546,20 +575,6 @@ namespace hdi {
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[POSITION]);
       glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), positions.data());
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-      // std::cout << "Positions: " << std::endl;
-
-      // for (int i = 0;i < 10;i ++) {
-      //   std::cout << positions[i].y << " ";
-      // }
-      // std::cout << std::endl;
-
-      // std::cout << "Labels: " << std::endl;
-
-      // for (int i = 0;i < 10;i ++) {
-      //   std::cout << class_labels[i] << " ";
-      // }
-      // std::cout << std::endl;
 
       std::unordered_map<uint32_t, std::vector<float>> class_points;
 
@@ -611,7 +626,7 @@ namespace hdi {
         _dimenfix_program.uniform1ui("mode", 2);
       }
 
-      if (_params._switch_axis && iteration < 50) { // iter val should be add to input
+      if (_params._switch_axis) { // TODO: add a iters limit input
         _dimenfix_program.uniform1ui("aswitch", 1);
       }
       else {

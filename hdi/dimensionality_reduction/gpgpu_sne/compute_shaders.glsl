@@ -413,13 +413,14 @@ const char* dimenfix_source = GLSL(430,
     float factor = x_range / y_range;
     pos.y *= factor;
 
-    if (aswitch == 1) { // move half way there
-      Positions[i].x = pos.x;
-      Positions[i].y = (pos.y + Positions[i].y * factor) / 2;
-    }
-    else {
-      Positions[i] = pos;
-    }
+    // if (aswitch == 1) { // move half way there
+    //   Positions[i].x = pos.x;
+    //   Positions[i].y = (pos.y + Positions[i].y * factor) / 2;
+    // }
+    // else {
+    //   Positions[i] = pos;
+    // }
+    Positions[i] = pos;
   }
 );
 
