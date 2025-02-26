@@ -448,7 +448,6 @@ namespace hdi {
       int num_points = points.size();
       cv::Mat data(num_points, 2, CV_32F);
   
-      // Load data into OpenCV Mat
       for (int i = 0; i < num_points; ++i) {
           data.at<float>(i, 0) = points[i].x;
           data.at<float>(i, 1) = points[i].y;
@@ -465,26 +464,31 @@ namespace hdi {
     }
 
     void GpgpuSneCompute::updateArrays(std::vector<Point2D> range_limit, std::vector<int> labels) {
-      std::vector<Point2D> rl = range_limit;
+      // std::vector<Point2D> rl = range_limit;
+    
+      // std::cout << "check input: " << std::endl;
       // for (int i = 0;i < 10;i ++) {
-      //   std::cout << rl[i].x << " ";
+      //   std::cout << range_limit[i].x << " ";
       // }
-      // std::cout << rl.size();
+      // std::cout << range_limit.size();
 
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[RANGE_LIMITS]);
-      glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, rl.size() * sizeof(Point2D), rl.data());
+      // if (glIsBuffer(_compute_buffers[RANGE_LIMITS]) == GL_FALSE) {
+      //   std::cerr << "Error: _compute_buffers[RANGE_LIMITS] is not a valid buffer!" << std::endl;
+      // }
+      glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, range_limit.size() * sizeof(Point2D), range_limit.data());
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-      std::cout << "check ranges update" << std::endl;
-      std::vector<Point2D> data(10);
-      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[RANGE_LIMITS]);
-      glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 10 * sizeof(Point2D), data.data());
-      // TODO: why is this 0???
+      // std::cout << "check ranges update" << std::endl;
+      // std::vector<Point2D> data(10);
+      // glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[RANGE_LIMITS]);
+      // glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 10 * sizeof(Point2D), data.data());
+      // // TODO: why is this 0???
 
-      for (const auto& point : data) {
-          std::cout << "(" << point.x << ", " << point.y << ") ";
-      }
-      std::cout << std::endl;
+      // for (const auto& point : data) {
+      //     std::cout << "(" << point.x << ", " << point.y << ") ";
+      // }
+      // std::cout << std::endl;
 
 
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[LABELS]);
@@ -632,6 +636,20 @@ namespace hdi {
       else {
         _dimenfix_program.uniform1ui("aswitch", 0);
       }
+
+      // if ((int)(iteration + 1) % 100 == 0) {
+
+      //   std::cout << "check ranges update iter: " << (int)iteration << std::endl;
+      //   std::vector<Point2D> data(10);
+      //   glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[RANGE_LIMITS]);
+      //   glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 10 * sizeof(Point2D), data.data());
+      //   // TODO: ranges not updated
+
+      //   for (const auto& point : data) {
+      //       std::cout << "(" << point.x << ", " << point.y << ") ";
+      //   }
+      //   std::cout << std::endl;
+      // }
 
       // Bind required buffers to shader program
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _compute_buffers[POSITION]);
