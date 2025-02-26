@@ -362,6 +362,7 @@ const char* dimenfix_source = GLSL(430,
   uniform uint num_points;
   uniform uint mode;
   uniform uint aswitch;
+  uniform float sigma;
   
   void main() {
     uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
@@ -413,14 +414,14 @@ const char* dimenfix_source = GLSL(430,
     float factor = x_range / y_range;
     pos.y *= factor;
 
-    // if (aswitch == 1) { // move half way there
-    //   Positions[i].x = pos.x;
-    //   Positions[i].y = (pos.y + Positions[i].y * factor) / 2;
-    // }
-    // else {
-    //   Positions[i] = pos;
-    // }
-    Positions[i] = pos;
+    if (aswitch == 1) { // move half way there
+      Positions[i].x = pos.x;
+      Positions[i].y = sigma * pos.y + Positions[i].y * factor * (1 - sigma);
+    }
+    else {
+      Positions[i] = pos;
+    }
+    // Positions[i] = pos;
   }
 );
 

@@ -429,9 +429,9 @@ namespace hdi {
         _center_and_scale_program.uniform1ui("scale", 1);
         _center_and_scale_program.uniform1f("diameter", 0.1f);
       }
-      else if (_params._switch_axis && (int)iteration % 5 == 0) { // iteration limit: input
+      else if (_params._switch_axis && (int)iteration % _params._iters == 0) { // iteration limit: input
         _center_and_scale_program.uniform1ui("scale", 2);
-        _center_and_scale_program.uniform1f("diameter", 0.3f); // the scale, can add as input
+        _center_and_scale_program.uniform1f("diameter", _params._beta); // the scale, can add as input
       }
       else
       {
@@ -630,12 +630,14 @@ namespace hdi {
         _dimenfix_program.uniform1ui("mode", 2);
       }
 
-      if (_params._switch_axis) { // TODO: add a iters limit input
+      if (_params._switch_axis) {
         _dimenfix_program.uniform1ui("aswitch", 1);
       }
       else {
         _dimenfix_program.uniform1ui("aswitch", 0);
       }
+
+      _dimenfix_program.uniform1f("sigma", _params._sigma);
 
       // if ((int)(iteration + 1) % 100 == 0) {
 

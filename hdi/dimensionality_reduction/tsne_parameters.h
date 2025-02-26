@@ -56,7 +56,9 @@ namespace hdi {
         _iters(10),
         _class_order("random"),
         _switch_axis(false),
-        _alpha(1.0f)
+        _alpha(1.0f),
+        _beta(0.7f),
+        _sigma(0.5f)
       { }
 
       int _seed;
@@ -80,6 +82,8 @@ namespace hdi {
       std::string _class_order;
       bool _switch_axis;
       float _alpha;
+      float _beta;
+      float _sigma;
     };
   }
 }
