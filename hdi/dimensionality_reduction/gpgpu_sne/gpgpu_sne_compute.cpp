@@ -30,7 +30,8 @@ namespace hdi {
       BOUNDS,
       RANGE_LIMITS,
       LABELS,
-      CLASS_BOUNDS
+      CLASS_BOUNDS,
+      OLD_POS
     };
 
     // Linearized sparse neighbourhood matrix
@@ -124,7 +125,7 @@ namespace hdi {
 
     void GpgpuSneCompute::clean()
     {
-      glDeleteBuffers(13, _compute_buffers.data());
+      glDeleteBuffers(14, _compute_buffers.data());
 
       fieldComputation.clean();
     }
@@ -178,6 +179,9 @@ namespace hdi {
 
       // Load up SSBOs with initial values
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[POSITION]);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, num_points * sizeof(Point2D), nullptr, GL_STREAM_DRAW);
+
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[OLD_POS]);
       glBufferData(GL_SHADER_STORAGE_BUFFER, num_points * sizeof(Point2D), nullptr, GL_STREAM_DRAW);
 
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[INTERP_FIELDS]);
@@ -290,6 +294,7 @@ namespace hdi {
 
       if (_params._switch_axis) { // disable exaggeration in switching, probably dont need this
         exaggeration = 1;
+        _params._iters = 1;
       }
 
       // Compute the gradients of the KL-function
@@ -429,7 +434,14 @@ namespace hdi {
         _center_and_scale_program.uniform1ui("scale", 1);
         _center_and_scale_program.uniform1f("diameter", 0.1f);
       }
-      else if (_params._switch_axis && (int)iteration % _params._iters == 0) { // iteration limit: input
+      else if (_params._switch_axis && (int)iteration % 20 == 1) { // iteration limit: input
+        // save position to old pos
+        std::vector<Point2D> points(num_points);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[POSITION]);
+        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), points.data());
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[OLD_POS]);
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), points.data());
+        // only compress but dont move y axis
         _center_and_scale_program.uniform1ui("scale", 2);
         _center_and_scale_program.uniform1f("diameter", _params._beta); // the scale, can add as input
       }
@@ -619,6 +631,7 @@ namespace hdi {
       _dimenfix_program.bind();
 
       _dimenfix_program.uniform1ui("num_points", num_points);
+      _dimenfix_program.uniform1ui("iter", int(iteration));
 
       if (_params._mode == "clipping") {
         _dimenfix_program.uniform1ui("mode", 0);
@@ -632,6 +645,7 @@ namespace hdi {
 
       if (_params._switch_axis) {
         _dimenfix_program.uniform1ui("aswitch", 1);
+        // pass iter count
       }
       else {
         _dimenfix_program.uniform1ui("aswitch", 0);
@@ -658,6 +672,7 @@ namespace hdi {
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _compute_buffers[BOUNDS]);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _compute_buffers[RANGE_LIMITS]);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _compute_buffers[CLASS_BOUNDS]);
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, _compute_buffers[OLD_POS]);
 
       unsigned int num_workgroups = (num_points / 128) + 1;
       unsigned int grid_size = sqrt(num_workgroups) + 1;

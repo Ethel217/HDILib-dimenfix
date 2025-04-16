@@ -356,6 +356,7 @@ const char* dimenfix_source = GLSL(430,
   layout(std430, binding = 1) buffer BoundsInterface { vec2 Bounds[]; };
   layout(std430, binding = 2) buffer RangeLimitInterface { vec2 RangeLimit[]; };  // range_limit input here (in percentages)
   layout(std430, binding = 3) buffer ClassBoundsInterface { vec2 ClassBounds[]; };  // class bounds input here (if mode is rescale)
+  layout(std430, binding = 0) buffer OldPos { vec2 OldPositions[]; };
 
   layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
   
@@ -363,6 +364,7 @@ const char* dimenfix_source = GLSL(430,
   uniform uint mode;
   uniform uint aswitch;
   uniform float sigma;
+  uniform uint iter; // set to 20
   
   void main() {
     uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
@@ -416,7 +418,8 @@ const char* dimenfix_source = GLSL(430,
 
     if (aswitch == 1) { // move half way there
       Positions[i].x = pos.x;
-      Positions[i].y = sigma * pos.y + Positions[i].y * factor * (1 - sigma);
+      Positions[i].y = float(iter % 20) / 20.0f * pos.y + OldPositions[i].y * factor * (1 - float(iter % 20) / 20.0f);
+      // problem with factor here
     }
     else {
       Positions[i] = pos;
