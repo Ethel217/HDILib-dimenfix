@@ -283,6 +283,7 @@ namespace hdi {
         _previous_gradient[i] = static_cast<float>(((iteration < _params._mom_switching_iter) ? _params._momentum : _params._final_momentum) * _previous_gradient[i] - _params._eta * _gain[i] * _gradient[i]);
         embedding->getContainer()[i] += static_cast<float>(_previous_gradient[i] * mult);
       }
+      // TODO
 
       //MAGIC NUMBER
       if (exaggeration > 1.2) {

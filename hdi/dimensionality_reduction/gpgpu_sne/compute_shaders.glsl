@@ -448,7 +448,7 @@ const char* class_bounds_source = GLSL(430,
     uint lid = gl_LocalInvocationIndex;
     uint groupSize = gl_WorkGroupSize.x;
     
-    // for (uint class_id = 0; class_id < num_classes; class_id++) {
+    // for (uint class_id = 0; class_id < num_c lasses; class_id++) {
     //   vec2 minBound = vec2(1e38);
     //   vec2 maxBound = vec2(-1e38);
       

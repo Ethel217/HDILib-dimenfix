@@ -73,6 +73,8 @@ message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
+find_package(Eigen3 CONFIG REQUIRED)
+
 find_package(lz4 CONFIG)
 if(NOT ${lz4_FOUND})
     find_package(PkgConfig REQUIRED)

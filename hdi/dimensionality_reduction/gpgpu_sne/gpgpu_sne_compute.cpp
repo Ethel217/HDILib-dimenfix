@@ -2,9 +2,10 @@
 
 #include "gpgpu_sne_compute.h"
 #include "compute_shaders.glsl"
-#include "opencv2\opencv.hpp"
+// #include "opencv2\opencv.hpp"
 
 #include <vector>
+#include <Eigen/Dense>
 #include <limits>
 #include <iostream>
 #include <cmath> // for sqrt
@@ -115,6 +116,7 @@ namespace hdi {
       std::cout << "dimenfix: " << _params._dimenfix << ", ";
       std::cout << "every " << _params._iters << " iters, ";
       std::cout << "mode: " << _params._mode << ", ";
+      std::cout << "density: " << _params._density << ", ";
       std::cout << "class order: " << _params._class_order << ", ";
       std::cout << "switch axis: " << _params._switch_axis << ", ";
       std::cout << "alpha: " << _params._alpha << ", ";
@@ -456,22 +458,60 @@ namespace hdi {
       glDispatchCompute(grid_size, grid_size, 1);
     }
 
+    // void computePCA(std::vector<Point2D>& points) {
+    //   int num_points = points.size();
+    //   cv::Mat data(num_points, 2, CV_32F);
+  
+    //   for (int i = 0; i < num_points; ++i) {
+    //       data.at<float>(i, 0) = points[i].x;
+    //       data.at<float>(i, 1) = points[i].y;
+    //   }
+  
+    //   cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 2);
+    //   cv::Mat reduced = pca.project(data);
+  
+    //   // x-y axis are switched, so that y-axis has largest variance
+    //   for (int i = 0; i < num_points; ++i) {
+    //       points[i].y = reduced.at<float>(i, 0);
+    //       points[i].x = reduced.at<float>(i, 1);
+    //   }
+    // }
+
     void computePCA(std::vector<Point2D>& points) {
       int num_points = points.size();
-      cv::Mat data(num_points, 2, CV_32F);
+      if (num_points == 0) return;
   
+      // Construct data matrix: each row is a point (x, y)
+      Eigen::MatrixXf data(num_points, 2);
       for (int i = 0; i < num_points; ++i) {
-          data.at<float>(i, 0) = points[i].x;
-          data.at<float>(i, 1) = points[i].y;
+          data(i, 0) = points[i].x;
+          data(i, 1) = points[i].y;
       }
   
-      cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 2);
-      cv::Mat reduced = pca.project(data);
+      // Center the data
+      Eigen::RowVector2f mean = data.colwise().mean();
+      data.rowwise() -= mean;
   
-      // x-y axis are switched, so that y-axis has largest variance
+      // Compute covariance matrix
+      Eigen::Matrix2f cov = (data.transpose() * data) / static_cast<float>(num_points - 1);
+  
+      // Compute eigenvectors and eigenvalues
+      Eigen::SelfAdjointEigenSolver<Eigen::Matrix2f> eig(cov);
+      Eigen::Matrix2f eig_vectors = eig.eigenvectors();  // Columns are eigenvectors
+  
+      // Sort eigenvectors in decreasing order of eigenvalues
+      Eigen::Vector2f eig_values = eig.eigenvalues();
+      if (eig_values(0) < eig_values(1)) {
+          eig_vectors.col(0).swap(eig_vectors.col(1));
+      }
+  
+      // Project data onto principal components
+      Eigen::MatrixXf reduced = data * eig_vectors;
+  
+      // Swap x and y axes so that y-axis has the largest variance
       for (int i = 0; i < num_points; ++i) {
-          points[i].y = reduced.at<float>(i, 0);
-          points[i].x = reduced.at<float>(i, 1);
+          points[i].y = reduced(i, 0);
+          points[i].x = reduced(i, 1);
       }
     }
 

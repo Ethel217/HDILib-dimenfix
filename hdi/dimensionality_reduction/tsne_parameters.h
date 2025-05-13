@@ -58,7 +58,8 @@ namespace hdi {
         _switch_axis(false),
         _alpha(1.0f),
         _beta(0.7f),
-        _sigma(0.5f)
+        _sigma(0.5f),
+        _density(true)
       { }
 
       int _seed;
@@ -76,6 +77,7 @@ namespace hdi {
       bool _presetEmbedding;					            //! Used at initialization to use the input embedding positions 
       
       bool _dimenfix;
+      bool _density;
       std::string _mode;
       int _iters; // iters in between pushing and ordering
       std::string _fix_selection;

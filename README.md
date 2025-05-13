@@ -63,7 +63,6 @@ Flann can be built from the source but we recommend vcpkg to install it, especia
 
 On Windows with vcpkg
 ```bash
-.\vcpkg install opencv4:x64-windows-static-md
 .\vcpkg install quirc:x64-windows-static-md
 .\vcpkg install tiff:x64-windows-static-md
 .\vcpkg install utf8_range:x64-windows-static-md
