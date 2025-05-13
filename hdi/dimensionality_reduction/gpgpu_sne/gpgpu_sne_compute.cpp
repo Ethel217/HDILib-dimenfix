@@ -566,6 +566,15 @@ namespace hdi {
       glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num_points * sizeof(Point2D), range_limits.data());
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+      // record original size
+      std::unordered_map<int, float> original_range_sizes;
+      for (unsigned int i = 0; i < num_points; i++) {
+          int c = class_labels[i];
+          float size = range_limits[i].y - range_limits[i].x;
+          // Assuming the range is the same for all points in a class
+          original_range_sizes[c] = size;
+      }
+
       // PCA on positions (embedding update)
       computePCA(positions);
 
@@ -579,7 +588,7 @@ namespace hdi {
       }
 
       // update range limits + buffer
-      // TODO: arrange ORIGINAL ranges
+      // arrange ORIGINAL ranges
       // Arrange class positions within range [0, 100] based on their average y position
       float min_y = 0.0f, max_y = 100.0f;
       std::vector<std::pair<int, float>> sorted_classes;
@@ -593,10 +602,12 @@ namespace hdi {
       });
 
       // Assign range limits for each class
+      // TODO: too many iterations here
       float current_y = min_y;
       for (int i = 0;i < sorted_classes.size();i ++) {
         int cls = sorted_classes[i].first;
-        float height = (max_y - min_y) * (class_counts[cls] / (float)num_points);
+        // float height = (max_y - min_y) * (class_counts[cls] / (float)num_points);
+        float height = original_range_sizes[cls];
           for (unsigned int i = 0; i < num_points; i++) {
               if (class_labels[i] == cls) {
                   range_limits[i].x = current_y;
